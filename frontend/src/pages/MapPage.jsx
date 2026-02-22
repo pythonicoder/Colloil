@@ -120,7 +120,7 @@ const MapPage = () => {
         {/* Collection Points List */}
         <section>
           <h2 className="font-outfit font-semibold text-lg text-stone-700 mb-4">
-            Nearby Points
+            {t("nearbyPoints")}
           </h2>
           
           {loading ? (

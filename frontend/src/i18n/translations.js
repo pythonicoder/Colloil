@@ -70,6 +70,7 @@ export const translations = {
     collectionPoints: "Collection Points",
     openingHours: "Opening Hours",
     getDirections: "Get Directions",
+    nearbyPoints: "Nearby Points",
     
     // Courier
     courierRequested: "Courier Requested!",
@@ -317,6 +318,7 @@ With COLLOIL, recycling your used cooking oil is easy, safe, and effective. Ever
     collectionPoints: "Punkty odbioru",
     openingHours: "Godziny otwarcia",
     getDirections: "Wyznacz trasę",
+    nearbyPoints: "Pobliskie Punkty",
   
     // Courier
     courierRequested: "Kurier został zamówiony!",
