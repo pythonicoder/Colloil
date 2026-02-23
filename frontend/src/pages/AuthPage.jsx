@@ -74,7 +74,6 @@ const AuthPage = () => {
           <h1 className="text-4xl font-bold" style={{ fontFamily: "Comic Sans MS" }}>
             Colloil
           </h1>
-          <p className="text-stone-500 mt-2">Turn waste into rewards</p>
         </motion.div>
 
         {/* Auth Card */}

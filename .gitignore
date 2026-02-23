@@ -28,3 +28,13 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Convex
+src/convex/_generated/
+
+# Env
+.env.local
+.env*
+
+# Node
+node_modules/

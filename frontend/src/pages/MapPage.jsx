@@ -1,5 +1,7 @@
-
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../convex/_generated/api";
 import { useState, useEffect } from 'react';
+import { useTracking } from "../contexts/TrackingContext";
 import { motion } from 'framer-motion';
 import { MapPin, Clock, Navigation } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -35,14 +37,39 @@ const customIcon = new L.Icon({
 });
 
 const MapPage = () => {
+  const courierLocations = useQuery(api.couriers.getLocations);
+  const updateLocation = useMutation(api.couriers.updateLocation);
+  console.log("Convex couriers:", courierLocations);
   const { t } = useLanguage();
   const { token } = useAuth();
+  const { trackingActive } = useTracking();
   const [points, setPoints] = useState([]);
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [setTrackingActive] = useState(true);
 
+  useEffect(() => {
+    if (!trackingActive) return;
+
+    const interval = setInterval(() => {
+      updateLocation({
+        courierId: "assignedCourier",
+        lat: 52.2297 + (Math.random() - 0.5) * 0.01,
+        lng: 21.0122 + (Math.random() - 0.5) * 0.01,
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [trackingActive]);
   // Warsaw center
   const center = [52.2297, 21.0122];
+  const calculateETA = (lat, lng, center) => {
+    const dx = lat - center[0];
+    const dy = lng - center[1];
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    return Math.max(2, Math.round(distance * 100));
+  };
 
   useEffect(() => {
     fetchCollectionPoints();
@@ -91,6 +118,7 @@ const MapPage = () => {
             zoom={12}
             style={{ height: '100%', width: '100%' }}
             zoomControl={false}
+            preferCanvas={true}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -110,6 +138,21 @@ const MapPage = () => {
                   <div className="font-dm-sans">
                     <p className="font-bold">{point.name}</p>
                     <p className="text-sm text-stone-500">{point.address}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {courierLocations?.map((c, i) => (
+              <Marker
+                key={`courier-${i}`}
+                position={[c.lat, c.lng]}
+                riseOnHover={true}
+              >
+                <Popup>
+                  <div>
+                    🚚 Courier: {c.courierId} <br />
+                    ETA: {calculateETA(c.lat, c.lng, center)} min
                   </div>
                 </Popup>
               </Marker>

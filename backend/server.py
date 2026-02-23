@@ -56,7 +56,6 @@ class UserResponse(BaseModel):
     address: str
     nickname: str
     total_oil_liters: float
-    total_glycerin_liters: float
     created_at: str
 
 class UserUpdate(BaseModel):
@@ -75,7 +74,6 @@ class CourierRequestResponse(BaseModel):
     id: str
     user_id: str
     oil_liters: float
-    glycerin_liters: float
     address: str
     status: str
     courier_name: str
@@ -158,7 +156,6 @@ async def register(user: UserCreate):
         "address": user.address,
         "nickname": user.nickname or user.name,
         "total_oil_liters": 0.0,
-        "total_glycerin_liters": 0.0,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user_doc)
@@ -207,7 +204,6 @@ async def get_profile(user=Depends(get_current_user)):
         address=user["address"],
         nickname=user["nickname"],
         total_oil_liters=user["total_oil_liters"],
-        total_glycerin_liters=user["total_glycerin_liters"],
         created_at=user["created_at"]
     )
 
@@ -223,7 +219,6 @@ async def update_profile(update: UserUpdate, user=Depends(get_current_user)):
 @api_router.post("/courier/request", response_model=CourierRequestResponse)
 async def request_courier(request: CourierRequest, user=Depends(get_current_user)):
     # Glycerin is approximately 10% of oil volume
-    glycerin_liters = request.oil_liters * 0.1
     
     courier_names = ["Mehmet K.", "Anna W.", "Piotr B.", "Kasia M.", "Tomasz L."]
     request_id = str(uuid.uuid4())
@@ -232,7 +227,6 @@ async def request_courier(request: CourierRequest, user=Depends(get_current_user
         "id": request_id,
         "user_id": user["id"],
         "oil_liters": request.oil_liters,
-        "glycerin_liters": glycerin_liters,
         "address": request.address or user["address"],
         "notes": request.notes,
         "status": "pending",
@@ -244,10 +238,9 @@ async def request_courier(request: CourierRequest, user=Depends(get_current_user
     
     # Update user's total oil
     new_oil_total = user["total_oil_liters"] + request.oil_liters
-    new_glycerin_total = user["total_glycerin_liters"] + glycerin_liters
     await db.users.update_one(
         {"id": user["id"]},
-        {"$set": {"total_oil_liters": new_oil_total, "total_glycerin_liters": new_glycerin_total}}
+        {"$set": {"total_oil_liters": new_oil_total}}
     )
     
     # Create notification
@@ -298,7 +291,11 @@ async def activate_coupon(coupon_id: str, user=Depends(get_current_user)):
         {"id": coupon_id},
         {"$set": {"activated": True, "code": code, "expires_at": expires}}
     )
-    
+    new_oil_total = max(0, user["total_oil_liters"] - coupon["required_liters"])
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"total_oil_liters": new_oil_total}}
+    )
     # Create notification
     await db.notifications.insert_one({
         "id": str(uuid.uuid4()),

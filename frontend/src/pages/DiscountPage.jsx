@@ -14,6 +14,7 @@ import { Progress } from '../components/ui/progress';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const DiscountPage = () => {
+  const { refreshUser } = useAuth();
   const { t } = useLanguage();
   const { user, token } = useAuth();
   const toast = useToast();
@@ -54,6 +55,7 @@ const DiscountPage = () => {
       }
       toast.error(message);
     }
+    await refreshUser();
   };
 
   const copyCode = (code) => {

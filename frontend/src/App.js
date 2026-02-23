@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "./i18n/LanguageContext";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ToastProvider } from "./components/ToastProvider";
 import BottomNav from "./components/BottomNav";
+import { TrackingProvider } from "./contexts/TrackingContext";
 
 // Pages
 import AuthPage from "./pages/AuthPage";
@@ -16,6 +18,9 @@ import HowtoUsePage from "./pages/HowtoUsePage";
 import AboutPage from "./pages/AboutPage";
 import CommunityPage from "./pages/CommunityPage";
 
+const convex = new ConvexReactClient(
+  process.env.REACT_APP_CONVEX_URL
+);
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -63,6 +68,7 @@ const AppLayout = ({ children }) => {
     </>
   );
 };
+
 
 function AppRoutes() {
   return (
@@ -186,17 +192,21 @@ function AppRoutes() {
 }
 function App() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <ToastProvider>
-          <BrowserRouter>
-            <div className="App font-dm-sans">
-              <AppRoutes />
-            </div>
-          </BrowserRouter>
-        </ToastProvider>
-      </AuthProvider>
-    </LanguageProvider>
+    <ConvexProvider client={convex}>
+      <LanguageProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <BrowserRouter>
+              <TrackingProvider>
+                <div className="App font-dm-sans">
+                  <AppRoutes />
+                </div>
+              </TrackingProvider>
+            </BrowserRouter>
+          </ToastProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </ConvexProvider>
   );
 }
 

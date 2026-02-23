@@ -1,5 +1,7 @@
 import { QRCodeCanvas } from 'qrcode.react';
+import { useMutation } from "convex/react";
 import { useEffect, useState } from 'react';
+import { useTracking } from '../contexts/TrackingContext';
 import { motion } from 'framer-motion';
 import { User, Edit2, Award, Calendar, MapPin, Phone, Mail, Save, X } from 'lucide-react';
 import { useToast } from '../components/ToastProvider';
@@ -11,6 +13,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 
 const ProfilePage = () => {
+  const removeCourier = useMutation("couriers:removeCourier");
   const [savedQR, setSavedQR] = useState(null);
 
   useEffect(() => {
@@ -20,6 +23,7 @@ const ProfilePage = () => {
     }
   }, []);
   const { t } = useLanguage();
+  const { setTrackingActive } = useTracking();
   const { user, updateProfile } = useAuth();
   const toast = useToast();
   const [editing, setEditing] = useState(false);
@@ -294,6 +298,8 @@ const ProfilePage = () => {
               onClick={() => {
                 localStorage.removeItem("lastDeliveryQR");
                 setSavedQR(null);
+                removeCourier({ courierId: "assignedCourier" });
+                setTrackingActive(false);
             }}
           >
             {t("clearQr")}

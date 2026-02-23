@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { api } from "../convex/_generated/api";
+import { useMutation } from "convex/react";
+import { useTracking } from "../contexts/TrackingContext";
 import { QRCodeCanvas } from 'qrcode.react';
 import { motion } from 'framer-motion';
 import { Droplet, Truck } from 'lucide-react';
@@ -95,6 +98,10 @@ const [couriers] = useState(
 };
 
 const HomePage = () => {
+  const updateLocation = useMutation(api.couriers.updateLocation);
+  const removeCourier = useMutation(api.couriers.removeCourier);
+  const { setTrackingActive } = useTracking();
+  const [isCourierActive, setIsCourierActive] = useState(false);
   const { t } = useLanguage();
   const { user, token, refreshUser } = useAuth();
   const toast = useToast();
@@ -116,41 +123,65 @@ const HomePage = () => {
     }
 
     setLoading(true);
+
     try {
-      const response = await axios.post(
-        `${API}/courier/request`,
-        { oil_liters: liters },
-        { headers: { Authorization: `Bearer ${token}` } }
+      try {
+        const response = await axios.post(
+          `${API}/courier/request`,
+          { oil_liters: liters },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        setCourierInfo(response.data);
+        refreshUser();
+      } catch (error) {
+        console.log("Backend down — demo mode courier spawn");
+      }
+
+    // Convex spawn HER DURUMDA:
+      await updateLocation({
+        courierId: "assignedCourier",
+        lat: 52.2297,
+        lng: 21.0122,
+      });
+
+      setTrackingActive(true);
+      setIsCourierActive(true);
+      toast.success(t('courierRequested'));
+
+      setDonatedOilLiters(liters);
+
+      const qrCodeValue = `COLLOIL-${Date.now()}`;
+      setQrValue(qrCodeValue);
+
+      localStorage.setItem(
+        "lastDeliveryQR",
+        JSON.stringify({
+          qr: qrCodeValue,
+          liters: liters,
+          date: new Date().toISOString(),
+        })
       );
-      
-    setCourierInfo(response.data);
-    toast.success(t('courierRequested'));
-    refreshUser();
 
-    setDonatedOilLiters(liters);
-    const qrCodeValue = `COLLOIL-${Date.now()}`;
-    setQrValue(qrCodeValue);
-    localStorage.setItem(
-      "lastDeliveryQR",
-      JSON.stringify({
-        qr: qrCodeValue,
-        liters: liters,
-        date: new Date().toISOString()
-      })
-    );
-    setShowThankYou(true);
-    setShowFillDialog(false);
+      setShowThankYou(true);
+      setShowFillDialog(false);
 
-    const audio = new Audio("/glug.mp3");
-    audio.play();
+      const audio = new Audio("/glug.mp3");
+      audio.play();
 
-    setOilAmount('');
+      setOilAmount('');
+
     } catch (error) {
       let message = 'An error occurred';
+
       if (error.response?.data?.detail) {
         const detail = error.response.data.detail;
-        message = typeof detail === 'string' ? detail : (detail.msg || JSON.stringify(detail));
+        message =
+          typeof detail === 'string'
+            ? detail
+            : detail.msg || JSON.stringify(detail);
       }
+
       toast.error(message);
     } finally {
       setLoading(false);
@@ -389,6 +420,8 @@ const HomePage = () => {
               onClick={() => {
                 setShowThankYou(false);
                 setIsRestaurantPickup(false);
+                setIsCourierActive(false);
+                removeCourier({ courierId: "assignedCourier" });
               }}
               className="w-full rounded-xl bg-primary hover:bg-primary-600"
             >
